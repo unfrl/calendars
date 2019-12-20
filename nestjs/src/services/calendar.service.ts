@@ -5,6 +5,7 @@ import * as IORedis from "ioredis";
 import Axios from "axios";
 
 const EVENT_COMPONENT_KEY = "VEVENT";
+const EXISTS_CACHE_EXP_SECONDS = 60 * 60 * 24; // 1 day
 
 @Injectable()
 export class CalendarService {
@@ -16,13 +17,35 @@ export class CalendarService {
     public getMeetupICalUrl = (groupName: string): string =>
         `https://www.meetup.com/${groupName}/events/ical/`;
 
+    public getGroupCacheName = (groupName: string): string =>
+        `GROUP_${groupName}`;
+
     public async checkMeetupGroupExists(groupName: string): Promise<boolean> {
+        const cacheKey = this.getGroupCacheName(groupName);
+        const redisResult = await this._redisClient.get(cacheKey);
+
+        if (redisResult !== null) {
+            return redisResult === "true";
+        }
+
         try {
             await Axios.head(this.getMeetupICalUrl(groupName), {
                 maxRedirects: 0,
             });
+            await this._redisClient.setex(
+                cacheKey,
+                EXISTS_CACHE_EXP_SECONDS,
+                "true",
+            );
+
             return true;
         } catch (error) {
+            await this._redisClient.setex(
+                cacheKey,
+                EXISTS_CACHE_EXP_SECONDS,
+                "false",
+            );
+
             return false;
         }
     }
