@@ -1,11 +1,16 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject } from "@nestjs/common";
 import * as ical from "ical";
 import * as icalgenerator from "ical-generator";
+import * as IORedis from "ioredis";
 
 const EVENT_COMPONENT_KEY = "VEVENT";
 
 @Injectable()
 export class CalendarService {
+    constructor(
+        @Inject(IORedis)
+        private readonly _redisClient: IORedis.Redis,
+    ) {}
     /**
      * Pulls a remote ical and returns the parsed result.
      * @param url - URL of the ical to grab
