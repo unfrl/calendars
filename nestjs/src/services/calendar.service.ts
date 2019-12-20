@@ -2,6 +2,7 @@ import { Injectable, Inject } from "@nestjs/common";
 import * as ical from "ical";
 import * as icalgenerator from "ical-generator";
 import * as IORedis from "ioredis";
+import Axios from "axios";
 
 const EVENT_COMPONENT_KEY = "VEVENT";
 
@@ -11,6 +12,21 @@ export class CalendarService {
         @Inject(IORedis)
         private readonly _redisClient: IORedis.Redis,
     ) {}
+
+    public getMeetupICalUrl = (groupName: string): string =>
+        `https://www.meetup.com/${groupName}/events/ical/`;
+
+    public async checkMeetupGroupExists(groupName: string): Promise<boolean> {
+        try {
+            await Axios.head(this.getMeetupICalUrl(groupName), {
+                maxRedirects: 0,
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
     /**
      * Pulls a remote ical and returns the parsed result.
      * @param url - URL of the ical to grab

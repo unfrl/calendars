@@ -9,7 +9,6 @@ import { Response } from "express";
 import { ApiResponse, ApiOperation } from "@nestjs/swagger";
 
 import { CalendarService } from "../services";
-import { getMeetupICalUrl, checkMeetupGroupExists } from "../utils";
 
 @Controller()
 export class CalendarController {
@@ -44,7 +43,9 @@ export class CalendarController {
         // Parse the meetup groups and check that each exist
         const groups = meetupGroups.split(",");
         const result = await Promise.all(
-            groups.map(group => checkMeetupGroupExists(group)),
+            groups.map(group =>
+                this._calendarService.checkMeetupGroupExists(group),
+            ),
         );
         if (result.indexOf(false) > -1) {
             throw new BadRequestException(
@@ -57,7 +58,7 @@ export class CalendarController {
         const calendars = await Promise.all(
             groups.map(group =>
                 this._calendarService.getCalendarFromUrl(
-                    getMeetupICalUrl(group),
+                    this._calendarService.getMeetupICalUrl(group),
                 ),
             ),
         );
